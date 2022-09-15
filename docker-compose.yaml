@@ -1,0 +1,53 @@
+version: "3"
+services:
+  zookeeper:
+    image: 'bitnami/zookeeper:latest'
+    ports:
+      - '22181:2181'
+    environment:
+      - ALLOW_ANONYMOUS_LOGIN=yes
+  kafka:
+    image: 'bitnami/kafka:latest'
+    environment:
+      KAFKA_CFG_ZOOKEEPER_CONNECT: zookeeper:2181
+      #Listener is what the broker will use to create server sockets
+      KAFKA_CFG_LISTENERS: INTERNAL://:9093,OUTSIDE://:9092
+      #Arvertised listener is what clients will use to connect to the brokers.
+      KAFKA_CFG_ADVERTISED_LISTENERS: INTERNAL://kafka:9093,OUTSIDE://localhost:9092
+      KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP: INTERNAL:PLAINTEXT,OUTSIDE:PLAINTEXT
+      KAFKA_CFG_INTER_BROKER_LISTENER_NAME: INTERNAL
+      ALLOW_PLAINTEXT_LISTENER: "yes"
+    depends_on:
+      - zookeeper
+  applicationa:
+    build:
+      context: ./ApplicationA
+      dockerfile: Dockerfile
+    image: applicationa
+    container_name: applicationa
+    ports:
+        - '9095:80'
+    depends_on:
+      - zookeeper
+      - kafka
+  applicationb:
+    build:
+      context: ./ApplicationB
+      dockerfile: Dockerfile
+    image: applicationb
+    container_name: applicationb
+    depends_on:
+      - zookeeper
+      - kafka
+  applicationaui:
+      build:
+          context: ./ApplicationAUI
+          dockerfile: Dockerfile
+      image: applicationaui
+      container_name: applicationaui
+      ports:
+        - '9096:80'
+      depends_on:
+        - applicationa
+    
+  
